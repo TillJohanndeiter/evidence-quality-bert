@@ -7,21 +7,14 @@ https://www.research.ibm.com/haifa/dept/vst/debating_data.shtml
 The code, especially tokenization and formatting are inspired form official bert repository.
 Source (Apache 2.0 license): https://github.com/google-research/bert/blob/master/run_classifier.py
 Method convert_examples_to_features and associated help methods were customized to
-the domain of dataset.
+the domain of dataset and unnecessary code parts are removed.
 """
 
 import numpy
 import pandas
+
 from bert import bert_tokenization
-import tensorflow_hub as hub
-
-MAX_SEQ_LENGTH = 200  # Maximal length of two argument in dataset.
-LABLES = [0, 1]
-lengths = set()
-
-# Load layer from tfhub
-BERT_MODEL_HUB = "https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/2"
-BERT_LAYER = hub.KerasLayer(BERT_MODEL_HUB, trainable=True)
+from model import BERT_LAYER, MAX_SEQ_LENGTH
 
 # Vocabulary and lower case flag is loaded dynamic from layer.
 vocab_file = BERT_LAYER.resolved_object.vocab_file.asset_path.numpy()
@@ -33,10 +26,13 @@ class ArgPair():
     """A single pair of two arguments which are ranked by the label."""
 
     def __init__(self,
-                 first_arg,
-                 second_arg,
-                 label):
-        """Constructs a ArgPair.
+                 first_arg: str,
+                 second_arg: str,
+                 first_stance: str,
+                 second_stance: str,
+                 topic: str,
+                 label: int, ):
+        """
         Args:
           first_arg: string. The untokenize text of the first argument from the dataset.
           second_arg: string. The untokenize text of the second argument from the dataset.
@@ -45,6 +41,9 @@ class ArgPair():
         """
         self.first_arg = first_arg
         self.second_arg = second_arg
+        self.first_stance = first_stance
+        self.second_stance = second_stance
+        self.topic = topic
         self.label = label
 
 
@@ -74,8 +73,6 @@ def _truncate_arg_pair(tokens_a, tokens_b):
     # TODO: Decide if truncating is needed
     while True:
         total_length = len(tokens_a) + len(tokens_b)
-        lengths.add(total_length)
-        assert total_length <= MAX_SEQ_LENGTH - 3
         if total_length <= MAX_SEQ_LENGTH - 3:
             break
         if len(tokens_a) > len(tokens_b):
@@ -103,7 +100,7 @@ def _process_arg_pair(arg_pair: ArgPair) -> ProcessedArgPair:
     second_arg_tokens = tokenizer.tokenize(arg_pair.second_arg)
 
     # TODO: Remove
-    # _truncate_arg_pair(first_arg_tokens, second_arg_tokens)
+    _truncate_arg_pair(first_arg_tokens, second_arg_tokens)
 
     segment_ids, tokens = create_tokens(first_arg_tokens, second_arg_tokens)
 
@@ -192,12 +189,9 @@ def create_x_and_y(filepath: str) -> ((numpy.ndarray, numpy.ndarray, numpy.ndarr
     :param filepath: absolute or relative path of
     :return: tuples of one and three numpy arrays (token_ids, attention_mask, type_ids) labels
     """
-    dataset = pandas.read_csv(filepath)
 
     # Create instance of ArgPair with correct label for
-    arg_pairs = dataset.apply(lambda entry: ArgPair(first_arg=entry[1],
-                                                    second_arg=entry[2],
-                                                    label=entry[3] - 1), axis=1)
+    arg_pairs = load_arg_pairs(filepath)
     processed_arg_pairs = _process_arg_pairs(arg_pairs)
     x_numpy, y_numpy = _convert_to_numpy_arrays(processed_arg_pairs)
 
@@ -208,3 +202,20 @@ def create_x_and_y(filepath: str) -> ((numpy.ndarray, numpy.ndarray, numpy.ndarr
     assert x_numpy[0].shape[1] == x_numpy[1].shape[1] == x_numpy[2].shape[1] == MAX_SEQ_LENGTH
 
     return x_numpy, y_numpy
+
+
+def load_arg_pairs(filepath) -> [ArgPair]:
+    """
+    Load csv dataset from filepath and convert it to dataframe and
+    afterwards to list of ArgPair's.
+    :param filepath: filepath of csv dataset to parse
+    :return: list of ArgPair's
+    """
+    dataframe = pandas.read_csv(filepath)
+    arg_pairs = dataframe.apply(lambda entry: ArgPair(first_arg=entry[1],
+                                                    second_arg=entry[2],
+                                                    topic=entry[0],
+                                                    first_stance=entry[5],
+                                                    second_stance=entry[6],
+                                                    label=entry[3] - 1), axis=1)
+    return arg_pairs
