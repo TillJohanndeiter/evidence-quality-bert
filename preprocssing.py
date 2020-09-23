@@ -1,3 +1,15 @@
+"""
+Module provides main method create_x_and_y which creates keras compatible numpy arrays
+from a csv dataset. All other methods are help methods create argument pairs, tokenize
+arguments and create the bert compatible format, which consists of word, attention and
+type ids. The dataset 'IBM Debater® - Evidence Quality' is available at:
+https://www.research.ibm.com/haifa/dept/vst/debating_data.shtml
+The code, especially tokenization and formatting are inspired form official bert repository.
+Source (Apache 2.0 license): https://github.com/google-research/bert/blob/master/run_classifier.py
+Method convert_examples_to_features and associated help methods were customized to
+the domain of dataset.
+"""
+
 import numpy
 import pandas
 from bert import bert_tokenization
@@ -17,7 +29,7 @@ do_lower_case = BERT_LAYER.resolved_object.do_lower_case.numpy()
 tokenizer = bert_tokenization.FullTokenizer(vocab_file=vocab_file, do_lower_case=do_lower_case)
 
 
-class ArgPair(object):
+class ArgPair():
     """A single pair of two arguments which are ranked by the label."""
 
     def __init__(self,
@@ -36,7 +48,7 @@ class ArgPair(object):
         self.label = label
 
 
-class ProcessedArgPair(object):
+class ProcessedArgPair():
     """Representation of tokenized and process argument pair. Contains arrays of corresponding
   token_ids, which makes an sentence understandable by bert. Input_mask shows which part of
   token_ids are padded. Segment ids signalize which part of token_ids belong to first and second
@@ -63,7 +75,7 @@ def _truncate_arg_pair(tokens_a, tokens_b):
     while True:
         total_length = len(tokens_a) + len(tokens_b)
         lengths.add(total_length)
-        assert (total_length <= MAX_SEQ_LENGTH - 3)
+        assert total_length <= MAX_SEQ_LENGTH - 3
         if total_length <= MAX_SEQ_LENGTH - 3:
             break
         if len(tokens_a) > len(tokens_b):
@@ -72,10 +84,23 @@ def _truncate_arg_pair(tokens_a, tokens_b):
             tokens_b.pop()
 
 
-def _process_arg_pair(argPair: ArgPair) -> ProcessedArgPair:
-    # The mask has 1 for real tokens and 0 for padding tokens.
-    first_arg_tokens = tokenizer.tokenize(argPair.first_arg)
-    second_arg_tokens = tokenizer.tokenize(argPair.second_arg)
+def _process_arg_pair(arg_pair: ArgPair) -> ProcessedArgPair:
+    """
+    The convention in BERT is:
+    For sequence pairs:
+    tokens:   [CLS] is this jack ##son ##ville ? [SEP] no it is not . [SEP]
+    input_ids: Corresponding numerical ids for each token.
+    input_mask : mask has 1 for real tokens and 0 for padding tokens
+    segment_ids: 0     0  0    0    0     0       0 0     1  1  1  1   1 1
+    Segment_ids are used to indicate whether this is the first
+    sequence or the second sequence.
+    Input_ids are used as sentence representation.
+    :param arg_pair: currently processed argument pair
+    :return: ProcessedArgPair of arg_pair
+    """
+
+    first_arg_tokens = tokenizer.tokenize(arg_pair.first_arg)
+    second_arg_tokens = tokenizer.tokenize(arg_pair.second_arg)
 
     # TODO: Remove
     # _truncate_arg_pair(first_arg_tokens, second_arg_tokens)
@@ -97,7 +122,7 @@ def _process_arg_pair(argPair: ArgPair) -> ProcessedArgPair:
         token_ids=input_ids,
         input_mask=input_mask,
         segment_ids=segment_ids,
-        label_id=argPair.label)
+        label_id=arg_pair.label)
 
 
 def create_tokens(first_arg_tokens, sec_arg_tokens) -> ([], []):
@@ -159,7 +184,7 @@ def _convert_to_numpy_arrays(arguments: [ProcessedArgPair]) \
            numpy.stack([arg.label for arg in arguments])
 
 
-def create_X_and_Y(filepath: str) -> ((numpy.ndarray, numpy.ndarray, numpy.ndarray), numpy.ndarray):
+def create_x_and_y(filepath: str) -> ((numpy.ndarray, numpy.ndarray, numpy.ndarray), numpy.ndarray):
     """
     Main function which receives absolute or relative filepath of an csv file
     which will be tokenized, type/attention masks and labels are created. Furthermore
@@ -174,16 +199,12 @@ def create_X_and_Y(filepath: str) -> ((numpy.ndarray, numpy.ndarray, numpy.ndarr
                                                     second_arg=entry[2],
                                                     label=entry[3] - 1), axis=1)
     processed_arg_pairs = _process_arg_pairs(arg_pairs)
-    x, y = _convert_to_numpy_arrays(processed_arg_pairs)
+    x_numpy, y_numpy = _convert_to_numpy_arrays(processed_arg_pairs)
 
     # Check that entry and y have same length
-    assert len(x[0]) == len(x[1]) == len(x[2]) == len(y)
+    assert len(x_numpy[0]) == len(x_numpy[1]) == len(x_numpy[2]) == len(y_numpy)
 
     # Check that all input vectors have same length as MAX_SEQ_LENGTH
-    assert x[0].shape[1] == x[1].shape[1] == x[2].shape[1] == MAX_SEQ_LENGTH
+    assert x_numpy[0].shape[1] == x_numpy[1].shape[1] == x_numpy[2].shape[1] == MAX_SEQ_LENGTH
 
-    return x, y
-
-
-if __name__ == '__main__':
-    x, y = create_X_and_Y('data/train.csv')
+    return x_numpy, y_numpy
