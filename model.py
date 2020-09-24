@@ -11,7 +11,7 @@ from tensorflow.keras.optimizers import Adam
 BERT_MODEL_HUB = "https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/2"
 BERT_LAYER = hub.KerasLayer(BERT_MODEL_HUB, trainable=True, name='bert_layer')
 
-# Maximal length of two argument in dataset.
+# Maximal length of two evidences in dataset.
 MAX_SEQ_LENGTH = 200
 
 METRICS = [BinaryAccuracy(),
