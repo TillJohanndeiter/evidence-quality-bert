@@ -1,9 +1,13 @@
 import argparse
 import pathlib
+import tensorflow as tf
+
+assert tf.__version__ == '2.3.0'
 
 from random import shuffle
 
 from pip._vendor.distlib.compat import raw_input
+print('Load layer. This might take a while.')
 from tensorflow.keras.models import load_model
 
 from preprocssing import EviPair, load_evi_pairs, x_and_y_from_evi_pair
@@ -15,7 +19,7 @@ parser.add_argument('--num',
                     default=5,
                     nargs='?',
                     help='Number of randomly chosen arg_pairs which will be predicted',
-                    type=str)
+                    type=int)
 parser.add_argument('model_filepath',
                     default='saved_model',
                     nargs='?',
@@ -47,7 +51,7 @@ nn_correct_pred = 0
 same_prediction = 0
 
 
-def print_sampel(arg_pair: EviPair):
+def print_sample(arg_pair: EviPair):
     """
     Print evidences, stances, label and predication for one sample.
     :param arg_pair: Current EviPair
@@ -64,7 +68,7 @@ def print_sampel(arg_pair: EviPair):
     print('Enter your choice: ')
     nn_prediction = predict_and_eval(arg_pair)
     print('Neuronal Network selected evidence {}'.format(nn_prediction))
-    print('By an acceptance rate of {} sample was labeled as {}'.
+    print('By an acceptance rate of {} sample was labeled as {} \n'.
           format(arg_pair.acceptance_rate, arg_pair.label))
 
 
@@ -122,6 +126,9 @@ def get_user_input(arg_pair: EviPair):
 
 if __name__ == '__main__':
 
+    print('Load Model successfully')
+    model.summary()
+
     print('Demonstration starts: ')
     if num_examples == 1:
         print('Now one sample from the dataset with two evidences is shown to you.'
@@ -149,7 +156,7 @@ if __name__ == '__main__':
     assert len(arg_pairs) == num_examples
 
     for arg_pair in arg_pairs:
-        print_sampel(arg_pair)
+        print_sample(arg_pair)
 
     # Print scores and "funny" message
 

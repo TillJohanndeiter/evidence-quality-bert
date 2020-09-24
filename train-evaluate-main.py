@@ -5,6 +5,8 @@ to load data and get a model. After that training and evaluation is done.
 
 import pathlib
 import argparse
+import tensorflow as tf
+assert tf.__version__ == '2.3.0'
 
 from datetime import datetime
 from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
@@ -33,9 +35,12 @@ data_path = args.filepath
 save_path = args.savepath
 """
 Load test and train set. Afterwards received model and start training
-season. After that evaluation and print of metrics is done.
+season. Training will generate a file for tensorboard. 
+After that evaluation and print of metrics is done. At the end
+model is saved.
 """
 if __name__ == '__main__':
+
     test_x, test_y = x_and_y_from_dataset(pathlib.Path(data_path).joinpath('test.csv'))
     train_x, train_y = x_and_y_from_dataset(pathlib.Path(data_path).joinpath('test.csv'))
 
@@ -47,7 +52,7 @@ if __name__ == '__main__':
     assert simple_bert is not None
 
     simple_bert.fit(x=train_x, y=train_y,
-                    batch_size=128, epochs=1,
+                    batch_size=32, epochs=1,
                     callbacks=[TensorBoard(), EarlyStopping()],
                     validation_split=0.2, shuffle=True)
 
