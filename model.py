@@ -46,7 +46,7 @@ def simple_bert() -> Model:
 
     output = Dense(1, activation='sigmoid')(sequence_output)
 
-    model = Model(inputs=bert_inputs, outputs=output, name='simple_bert')
+    model = Model(inputs=bert_inputs, outputs=output, name='evi_bert')
     model.compile(loss='binary_crossentropy', optimizer=Adam(learning_rate=1e-5),
                   metrics=METRICS)
     model.summary()
