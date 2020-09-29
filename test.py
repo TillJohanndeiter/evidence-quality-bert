@@ -1,13 +1,12 @@
 import argparse
 import pathlib
+from random import shuffle
+
 import tensorflow as tf
 
 assert tf.__version__ == '2.3.0'
 
-from random import shuffle
-
 from pip._vendor.distlib.compat import raw_input
-print('Load layer. This might take a while.')
 from tensorflow.keras.models import load_model
 
 from preprocssing import EviPair, load_evi_pairs, x_and_y_from_evi_pair
@@ -46,9 +45,9 @@ arg_pairs = load_evi_pairs(pathlib.Path(dataset_filepath))
 
 num_examples = args.num
 
-human_correct_pred = 0
-nn_correct_pred = 0
-same_prediction = 0
+HUMAN_CORRECT_PRED = 0
+NN_CORRECT_PRED = 0
+SAME_PRED = 0
 
 
 def print_sample(arg_pair: EviPair):
@@ -80,7 +79,7 @@ def predict_and_eval(arg_pair: EviPair):
     :param arg_pair: Current sample
     :return: predicted label from network
     """
-    global nn_correct_pred, same_prediction
+    global NN_CORRECT_PRED, SAME_PRED
 
     user_choice = get_user_input(arg_pair)
     x_input, _ = x_and_y_from_evi_pair(arg_pair)
@@ -90,9 +89,9 @@ def predict_and_eval(arg_pair: EviPair):
 
     pred_class = 2 if nn_prediction > 0.5 else 1
     if pred_class == arg_pair.label:
-        nn_correct_pred += 1
+        NN_CORRECT_PRED += 1
     if user_choice == pred_class:
-        same_prediction += 1
+        SAME_PRED += 1
 
     return pred_class
 
@@ -104,7 +103,7 @@ def get_user_input(arg_pair: EviPair):
     :param arg_pair: Current sample
     :return: choice of user as integer
     """
-    global human_correct_pred
+    global HUMAN_CORRECT_PRED
 
     while True:
         try:
@@ -113,7 +112,7 @@ def get_user_input(arg_pair: EviPair):
             if choice in [1,2]:
 
                 if choice == arg_pair.label:
-                    human_correct_pred += 1
+                    HUMAN_CORRECT_PRED += 1
 
                 break
             else:
@@ -155,19 +154,19 @@ if __name__ == '__main__':
     # Repeat prediction for each sample
     assert len(arg_pairs) == num_examples
 
-    for arg_pair in arg_pairs:
-        print_sample(arg_pair)
+    for arg_pair_to_eval in arg_pairs:
+        print_sample(arg_pair_to_eval)
 
     # Print scores and "funny" message
 
-    print('Your score: {} / {}'.format(human_correct_pred, num_examples))
-    print('Score of our Network: {} / {}'.format(nn_correct_pred, num_examples))
+    print('Your score: {} / {}'.format(HUMAN_CORRECT_PRED, num_examples))
+    print('Score of our Network: {} / {}'.format(NN_CORRECT_PRED, num_examples))
     print('You and our computational intelligence selected the '
-          'same evidence of {} samples'.format(same_prediction))
+          'same evidence of {} samples'.format(SAME_PRED))
 
-    if human_correct_pred == nn_correct_pred:
+    if HUMAN_CORRECT_PRED == NN_CORRECT_PRED:
         print('You and our network have the same accuracy')
-    elif human_correct_pred > nn_correct_pred:
+    elif HUMAN_CORRECT_PRED > NN_CORRECT_PRED:
         print('You are a better evidence detector than our network!')
     else:
         print('Even the computer is better than you. You have to '

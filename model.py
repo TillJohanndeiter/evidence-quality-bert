@@ -12,7 +12,7 @@ BERT_MODEL_HUB = "https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/2
 BERT_LAYER = hub.KerasLayer(BERT_MODEL_HUB, trainable=True, name='bert_layer')
 
 # Maximal length of two evidences in dataset.
-MAX_SEQ_LENGTH = 200
+MAX_SEQ_LENGTH = 125
 
 METRICS = [BinaryAccuracy(),
            Precision(),
@@ -47,7 +47,7 @@ def simple_bert() -> Model:
     output = Dense(1, activation='sigmoid')(sequence_output)
 
     model = Model(inputs=bert_inputs, outputs=output, name='simple_bert')
-    model.compile(loss='binary_crossentropy', optimizer=Adam(learning_rate=2e-5),
+    model.compile(loss='binary_crossentropy', optimizer=Adam(learning_rate=1e-5),
                   metrics=METRICS)
     model.summary()
 

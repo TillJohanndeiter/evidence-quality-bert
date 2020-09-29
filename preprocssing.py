@@ -21,6 +21,8 @@ vocab_file = BERT_LAYER.resolved_object.vocab_file.asset_path.numpy()
 do_lower_case = BERT_LAYER.resolved_object.do_lower_case.numpy()
 tokenizer = bert_tokenization.FullTokenizer(vocab_file=vocab_file, do_lower_case=do_lower_case)
 
+cutted = set()
+
 
 class EviPair():
     """A single pair of two evidence which are ranked by the label."""
@@ -66,13 +68,18 @@ class ProcessedEviPair():
         self.label = label_id
 
 
-def _truncate_evi_pair(tokens_a, tokens_b):
+def _truncate_evi_pair(tokens_a: [str], tokens_b: [str]):
     """Truncates a sequence pair in place to the maximum length."""
     # This is a simple heuristic which will always truncate the longer sequence
     # one token at a time. This makes more sense than truncating an equal percent
     # of tokens from each, since if one sequence is very short then each token
     # that's truncated likely contains more information than a longer sequence.
     # TODO: Decide if truncating is needed
+    total_length = len(tokens_a) + len(tokens_b)
+
+    if total_length > MAX_SEQ_LENGTH - 3:
+        cutted.add(str(tokens_a + tokens_b))
+
     while True:
         total_length = len(tokens_a) + len(tokens_b)
         if total_length <= MAX_SEQ_LENGTH - 3:
@@ -184,7 +191,8 @@ def _convert_to_numpy_arrays(evidences: [ProcessedEviPair]) \
            numpy.stack([evi.label for evi in evidences])
 
 
-def x_and_y_from_dataset(filepath: str) -> ((numpy.ndarray, numpy.ndarray, numpy.ndarray), numpy.ndarray):
+def x_and_y_from_dataset(filepath: str) -> \
+        ((numpy.ndarray, numpy.ndarray, numpy.ndarray), numpy.ndarray):
     """
     Main function which receives absolute or relative filepath of an csv file
     which will be tokenized, type/attention masks and labels are created. Furthermore
@@ -198,6 +206,8 @@ def x_and_y_from_dataset(filepath: str) -> ((numpy.ndarray, numpy.ndarray, numpy
     processed_evi_pairs = _process_evi_pairs(evi_pairs)
     x_numpy, y_numpy = _convert_to_numpy_arrays(processed_evi_pairs)
 
+    print(len(cutted) / len(evi_pairs))
+
     # Check that entry and y have same length
     assert len(x_numpy[0]) == len(x_numpy[1]) == len(x_numpy[2]) == len(y_numpy)
 
@@ -207,7 +217,13 @@ def x_and_y_from_dataset(filepath: str) -> ((numpy.ndarray, numpy.ndarray, numpy
     return x_numpy, y_numpy
 
 
-def x_and_y_from_evi_pair(evi_pair: EviPair) -> ((numpy.ndarray, numpy.ndarray, numpy.ndarray), numpy.ndarray):
+def x_and_y_from_evi_pair(evi_pair: EviPair) -> \
+        ((numpy.ndarray, numpy.ndarray, numpy.ndarray), numpy.ndarray):
+    """
+    Convert evi_pair to keras usable numpy arrays
+    :param evi_pair: Sample from dataset which will be converted
+    :return: numpy arrays which can be used with keras
+    """
     process_evi_pair = _process_evi_pair(evi_pair)
     return _convert_to_numpy_arrays([process_evi_pair])
 
