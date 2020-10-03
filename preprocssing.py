@@ -21,9 +21,6 @@ vocab_file = BERT_LAYER.resolved_object.vocab_file.asset_path.numpy()
 do_lower_case = BERT_LAYER.resolved_object.do_lower_case.numpy()
 tokenizer = bert_tokenization.FullTokenizer(vocab_file=vocab_file, do_lower_case=do_lower_case)
 
-cutted = set()
-
-
 class EviPair():
     """A single pair of two evidence which are ranked by the label."""
 
@@ -74,11 +71,6 @@ def _truncate_evi_pair(tokens_a: [str], tokens_b: [str]):
     # one token at a time. This makes more sense than truncating an equal percent
     # of tokens from each, since if one sequence is very short then each token
     # that's truncated likely contains more information than a longer sequence.
-    # TODO: Decide if truncating is needed
-    total_length = len(tokens_a) + len(tokens_b)
-
-    if total_length > MAX_SEQ_LENGTH - 3:
-        cutted.add(str(tokens_a + tokens_b))
 
     while True:
         total_length = len(tokens_a) + len(tokens_b)
@@ -108,7 +100,6 @@ def _process_evi_pair(evi_pair: EviPair) -> ProcessedEviPair:
     first_evi_tokens = tokenizer.tokenize(evi_pair.first_evi)
     second_evi_tokens = tokenizer.tokenize(evi_pair.second_evi)
 
-    # TODO: Remove
     _truncate_evi_pair(first_evi_tokens, second_evi_tokens)
 
     segment_ids, tokens = create_tokens(first_evi_tokens, second_evi_tokens)
@@ -205,8 +196,6 @@ def x_and_y_from_dataset(filepath: str) -> \
     evi_pairs = load_evi_pairs(filepath)
     processed_evi_pairs = _process_evi_pairs(evi_pairs)
     x_numpy, y_numpy = _convert_to_numpy_arrays(processed_evi_pairs)
-
-    print(len(cutted) / len(evi_pairs))
 
     # Check that entry and y have same length
     assert len(x_numpy[0]) == len(x_numpy[1]) == len(x_numpy[2]) == len(y_numpy)

@@ -42,8 +42,8 @@ After that evaluation and print of metrics is done. At the end
 model is saved.
 """
 if __name__ == '__main__':
-    test_x, test_y = x_and_y_from_dataset(pathlib.Path(data_path).joinpath('test.csv'))
-    train_x, train_y = x_and_y_from_dataset(pathlib.Path(data_path).joinpath('test.csv'))
+    train_x, train_y = x_and_y_from_dataset(pathlib.Path(data_path).joinpath('train.csv'))
+    test_x, test_y = x_and_y_from_dataset(pathlib.Path(data_path).joinpath('test.py.csv'))
 
     # Correct length of tuple
     assert len(train_x) == len(test_x) == 3
