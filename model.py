@@ -8,7 +8,7 @@ from tensorflow.keras.metrics import BinaryAccuracy, Precision, Recall,\
 from tensorflow.keras.optimizers import Adam
 
 # Load layer from tfhub
-BERT_MODEL_HUB = "https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/2"
+BERT_MODEL_HUB = "https://tfhub.dev/tensorflow/bert_en_wwm_cased_L-24_H-1024_A-16/2"
 BERT_LAYER = hub.KerasLayer(BERT_MODEL_HUB, trainable=True, name='bert_layer')
 
 # Maximal length of two evidences in dataset.
@@ -40,8 +40,7 @@ def simple_bert() -> Model:
                                name="segment_ids")
     bert_inputs = [input_word_ids, input_mask, segment_ids]
 
-    #TODO: If pooled_output is not included into final model. Replace by _
-    pooled_output, sequence_output = BERT_LAYER(bert_inputs)
+    _, sequence_output = BERT_LAYER(bert_inputs)
     sequence_output = GlobalAveragePooling1D(name='average_over_time')(sequence_output)
 
     output = Dense(1, activation='sigmoid')(sequence_output)
