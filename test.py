@@ -23,7 +23,7 @@ parser.add_argument('dataset_filepath',
 parser.add_argument('model_filepath',
                     default='saved_model',
                     nargs='?',
-                    help='Filepath of saved model file',
+                    help='Filepath of saved model',
                     type=str)
 
 WRONG_INPUT = 'Please enter only 1 or 2'
