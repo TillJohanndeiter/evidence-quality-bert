@@ -22,7 +22,7 @@ parser.add_argument('filepath',
 parser.add_argument('dataset_filepath',
                     default='model_{}'.format(datetime.now().strftime("%Y%m%d-%H%M%S")),
                     nargs='?',
-                    help='Filepath of save folder for model',
+                    help='Filepath of model safe folder',
                     type=str)
 
 args = parser.parse_args()
