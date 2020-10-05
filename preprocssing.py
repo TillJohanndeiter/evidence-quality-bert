@@ -9,6 +9,7 @@ Source (Apache 2.0 license): https://github.com/google-research/bert/blob/master
 Method convert_examples_to_features and associated help methods were customized to
 the domain of dataset and unnecessary code parts are removed.
 """
+from pathlib import Path
 
 import numpy
 import pandas
@@ -182,13 +183,13 @@ def _convert_to_numpy_arrays(evidences: [ProcessedEviPair]) \
            numpy.stack([evi.label for evi in evidences])
 
 
-def x_and_y_from_dataset(filepath: str) -> \
+def x_and_y_from_dataset(filepath: Path) -> \
         ((numpy.ndarray, numpy.ndarray, numpy.ndarray), numpy.ndarray):
     """
     Main function which receives absolute or relative filepath of an csv file
     which will be tokenized, type/attention masks and labels are created. Furthermore
     a tuple of numpy arrays is created which is directly usable for keras.
-    :param filepath: absolute or relative path of
+    :param filepath: absolute or relative path of csv file
     :return: tuples of one and three numpy arrays (token_ids, attention_mask, type_ids) labels
     """
 
