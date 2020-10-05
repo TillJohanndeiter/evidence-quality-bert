@@ -30,7 +30,6 @@ def evi_bert() -> Model:
     documentation form preprocessing. Print summary after compilation.
     :return: created model
     """
-    # TODO: Decide for model
 
     input_word_ids = Input(shape=(MAX_SEQ_LENGTH,), dtype=int32,
                                   name="input_word_ids")
