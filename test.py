@@ -1,11 +1,7 @@
 import argparse
 import pathlib
+
 from random import shuffle
-
-import tensorflow as tf
-
-assert tf.__version__ == '2.3.0'
-
 from pip._vendor.distlib.compat import raw_input
 from tensorflow.keras.models import load_model
 
@@ -17,18 +13,17 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--num',
                     default=5,
                     nargs='?',
-                    help='Number of randomly chosen arg_pairs which will be predicted',
+                    help='Number of randomly chosen pairs which will be predicted',
                     type=int)
-parser.add_argument('model_filepath',
-                    default='saved_model',
-                    nargs='?',
-                    help='Absolute or relative filepath of saved model file',
-                    type=str)
-
 parser.add_argument('dataset_filepath',
                     default='data/test.csv',
                     nargs='?',
-                    help='Absolute or relative filepath to folder with train.csv and test.csv',
+                    help='Path of test.csv',
+                    type=str)
+parser.add_argument('model_filepath',
+                    default='saved_model',
+                    nargs='?',
+                    help='Filepath of saved model file',
                     type=str)
 
 WRONG_INPUT = 'Please enter only 1 or 2'
@@ -56,7 +51,6 @@ def print_sample(arg_pair: EviPair):
     :param arg_pair: Current EviPair
     :return: None
     """
-    # TODO: print ID corresponding wikipedia article ?
     print('Please think about which argument you '
           'would prefer in a discussion about: '
           '\'{}\' '.format(arg_pair.topic))
@@ -134,18 +128,20 @@ if __name__ == '__main__':
               ' The Evidence can be of same or opponent stance. '
               'So think of which you would take in an argument or '
               'which is more convincing.')
-        print('Please evaluate the better evidence with 0 for first'
-              ' and 1 for second evidence')
+        print('Please evaluate the better evidence with 1 for first'
+              ' and 2 for second evidence')
     else:
         print('Now {} samples from the dataset with two evidences are shown to you.'
               ' Evidences can be of same or opponent stance. '
               'So think of which you would take in an argument or '
               'which is more convincing.'.format(num_examples))
-        print('Please evaluate the better evidences by enter 0 for first'
-              ' and 1 for second evidence')
+        print('Please evaluate the better evidences by enter 1 for first'
+              ' and 2 for second evidence')
 
     # Load dataset, shuffle and slice wanted number of examples
 
+    print('Please keep in mind that the label was made by a majority '
+          'participants. They do not claim absolute correctness.')
     arg_pairs = load_evi_pairs(dataset_filepath)
     shuffle(arg_pairs)
 
@@ -167,9 +163,8 @@ if __name__ == '__main__':
     if HUMAN_CORRECT_PRED == NN_CORRECT_PRED:
         print('You and our network have the same accuracy')
     elif HUMAN_CORRECT_PRED > NN_CORRECT_PRED:
-        print('You are a better evidence detector than our network!')
+        print('You are have more matches with labels.')
     else:
-        print('Even the computer is better than you. You have to '
-              'train your evidence detector evaluation skills!')
+        print('The neuronal network had more matches than you.')
 
     print('Well done! I hope you enjoyed the demonstration')
