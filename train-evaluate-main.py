@@ -6,35 +6,30 @@ to load data and get a model. After that training and evaluation is done.
 import pathlib
 import argparse
 from datetime import datetime
-
-import tensorflow as tf
-
-assert tf.__version__ == '2.3.0'
-
-from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping
 
 from preprocssing import x_and_y_from_dataset
-from model import simple_bert
+from model import evi_bert
 
 # For better testing purpose you can pass the path of the folder of test and train csv
 parser = argparse.ArgumentParser()
 parser.add_argument('filepath',
                     default='data',
                     nargs='?',
-                    help='Absolute or relative filepath to folder with train.csv and test.csv',
+                    help='Filepath to folder with train.csv and test.csv',
                     type=str)
 
-parser.add_argument('savepath',
-                    default='model {}'.format(datetime.now().strftime("%Y%m%d-%H%M%S")),
+parser.add_argument('dataset_filepath',
+                    default='model_{}'.format(datetime.now().strftime("%Y%m%d-%H%M%S")),
                     nargs='?',
-                    help='Absolute or relative filepath the save folder',
+                    help='Filepath of save folder for model',
                     type=str)
 
 args = parser.parse_args()
 
 data_path = args.filepath
 
-save_path = args.savepath
+dataset_filepath = args.dataset_filepath
 """
 Load test and train set. Afterwards received model and start training
 season. Training will generate a file for tensorboard.
@@ -48,13 +43,14 @@ if __name__ == '__main__':
     # Correct length of tuple
     assert len(train_x) == len(test_x) == 3
 
-    simple_bert = simple_bert()
+    simple_bert = evi_bert()
+    simple_bert.summary()
 
     assert simple_bert is not None
 
     simple_bert.fit(x=train_x, y=train_y,
-                    batch_size=32, epochs=1,
-                    callbacks=[TensorBoard(), EarlyStopping()],
+                    batch_size=16, epochs=10,
+                    callbacks=[EarlyStopping()],
                     validation_split=0.2, shuffle=True)
 
     scores = simple_bert.evaluate(x=test_x, y=test_y, verbose=1)
@@ -78,4 +74,4 @@ if __name__ == '__main__':
     print('False positives / Labeled with second evidence '
           'and predicted as first evidence : {}'.format(scores[6]))
 
-    simple_bert.save(save_path)
+    simple_bert.save(dataset_filepath)
