@@ -2,6 +2,8 @@
 
 Welcome to my natural language processing project.
 
+Supported python version: 3.8
+
 ## Installation
 
 You could use a virtual environment to avoid dependency problems.  
