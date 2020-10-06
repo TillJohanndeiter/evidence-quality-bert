@@ -56,7 +56,7 @@ Arguments:
 
 dataset_filepath - Filepath to folder with train.csv and test.csv
 
-savepath - Filepath of save folder for model
+savepath - Filepath of model safe folder
 
 As default ./data and ./model_%Y%m%d-%H%M%S is used.
 
@@ -76,7 +76,7 @@ Arguments:
 
 dataset_filepath - Path of test.csv
 
-model_filepath - Filepath of saved model file
+model_filepath - Filepath of saved model
 
 --num - Number of randomly chosen pairs which will be predicted
 
