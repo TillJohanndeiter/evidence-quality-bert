@@ -27,7 +27,7 @@ parser.add_argument('dataset_filepath',
 
 args = parser.parse_args()
 
-data_path = args.filepath
+data_path = pathlib.Path(args.filepath)
 
 dataset_filepath = args.dataset_filepath
 """
@@ -37,41 +37,50 @@ After that evaluation and print of metrics is done. At the end
 model is saved.
 """
 if __name__ == '__main__':
-    train_x, train_y = x_and_y_from_dataset(pathlib.Path(data_path).joinpath('train.csv'))
-    test_x, test_y = x_and_y_from_dataset(pathlib.Path(data_path).joinpath('test.csv'))
 
-    # Correct length of tuple
-    assert len(train_x) == len(test_x) == 3
+    train_path = data_path.joinpath('train.csv')
+    test_path = data_path.joinpath('train.csv')
 
-    simple_bert = evi_bert()
-    simple_bert.summary()
+    if train_path.is_file() and test_path.is_file():
 
-    assert simple_bert is not None
+        train_x, train_y = x_and_y_from_dataset(train_path)
+        test_x, test_y = x_and_y_from_dataset(test_path)
 
-    simple_bert.fit(x=train_x, y=train_y,
-                    batch_size=16, epochs=10,
-                    callbacks=[EarlyStopping()],
-                    validation_split=0.2, shuffle=True)
+        # Correct length of tuple
+        assert len(train_x) == len(test_x) == 3
 
-    scores = simple_bert.evaluate(x=test_x, y=test_y, verbose=1)
+        simple_bert = evi_bert()
+        simple_bert.summary()
 
-    assert len(scores) > 6
+        assert simple_bert is not None
 
-    # Print metrics
+        simple_bert.fit(x=train_x, y=train_y,
+                        batch_size=16, epochs=10,
+                        callbacks=[EarlyStopping()],
+                        validation_split=0.2, shuffle=True)
 
-    print('Binary Accuracy: {}'.format(scores[1]))
-    print('Precision: {}'.format(scores[2]))
-    print('Recall: {}'.format(scores[3]))
+        scores = simple_bert.evaluate(x=test_x, y=test_y, verbose=1)
 
-    # Print values of confusion matrix
+        assert len(scores) > 6
 
-    print('True negatives / Labeled with first evidence '
-          'and predicted as first evidence  : {}'.format(scores[5]))
-    print('True positives / Labeled with second evidence '
-          'and predicted as second evidence : {}'.format(scores[4]))
-    print('False negatives / Labeled with first evidence '
-          'and predicted as second evidence : {}'.format(scores[7]))
-    print('False positives / Labeled with second evidence '
-          'and predicted as first evidence : {}'.format(scores[6]))
+        # Print metrics
 
-    simple_bert.save(dataset_filepath)
+        print('Binary Accuracy: {}'.format(scores[1]))
+        print('Precision: {}'.format(scores[2]))
+        print('Recall: {}'.format(scores[3]))
+
+        # Print values of confusion matrix
+
+        print('True negatives / Labeled with first evidence '
+              'and predicted as first evidence  : {}'.format(scores[5]))
+        print('True positives / Labeled with second evidence '
+              'and predicted as second evidence : {}'.format(scores[4]))
+        print('False negatives / Labeled with first evidence '
+              'and predicted as second evidence : {}'.format(scores[7]))
+        print('False positives / Labeled with second evidence '
+              'and predicted as first evidence : {}'.format(scores[6]))
+
+        simple_bert.save(dataset_filepath)
+
+    else:
+        print('Datasets at  {} and {} not found!'.format(train_path, test_path))
