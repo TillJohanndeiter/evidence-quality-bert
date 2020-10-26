@@ -1,6 +1,6 @@
 # Argument Quality task: IBM Debater – Evidence Quality
 
-Welcome to my natural language processing project.
+In this project i have used pretrained transformer bert to solve the task of binary evidence comparsion based on a IBM dataset. The preprocessing, model, training and the commandline game is split into four python scripts. The python notebook combines everything.
 
 Supported python version: 3.8
 
