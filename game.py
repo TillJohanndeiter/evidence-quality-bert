@@ -5,7 +5,7 @@ from random import shuffle
 from pip._vendor.distlib.compat import raw_input
 from tensorflow.keras.models import load_model
 
-from preprocssing import EviPair, load_evi_pairs, x_and_y_from_evi_pair
+from evi_bert import EviPair, load_evi_pairs, x_and_y_from_evi_pair
 
 # For better testing purpose you can pass the path of the model and dataset which is used
 parser = argparse.ArgumentParser()

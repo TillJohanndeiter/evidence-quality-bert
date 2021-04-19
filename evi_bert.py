@@ -1,26 +1,81 @@
 """
-Module provides main method create_x_and_y which creates keras compatible numpy arrays
-from a csv dataset. All other methods are help methods create evidence pairs, tokenize
-evidences and create the bert compatible format, which consists of word, attention and
-type ids. The dataset 'IBM Debater® - Evidence Quality' is available at:
+Start preprocessing, training and test evaluation.
+The dataset 'IBM Debater® - Evidence Quality' is available at:
 https://www.research.ibm.com/haifa/dept/vst/debating_data.shtml
-The code, especially tokenization and formatting are inspired form official bert repository.
+The code, especially tokenization and formatting are inspired form official bert_model repository.
 Source (Apache 2.0 license): https://github.com/google-research/bert/blob/master/run_classifier.py
 Method convert_examples_to_features and associated help methods were customized to
 the domain of dataset and unnecessary code parts are removed.
 """
+
+import pathlib
+import argparse
+from datetime import datetime
 from pathlib import Path
 
 import numpy
+from numpy import int32
 import pandas
 
 from bert import bert_tokenization
-from model import BERT_LAYER, MAX_SEQ_LENGTH
+
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras import Model
+from tensorflow.keras.layers import Input, Dense, GlobalAveragePooling1D
+from tensorflow.keras.metrics import BinaryAccuracy, Precision, Recall, \
+    TruePositives, TrueNegatives, FalsePositives, FalseNegatives
+from tensorflow.keras.optimizers import Adam
+
+import tensorflow_hub as hub
+
+# Load layer from tfhub
+BERT_MODEL_HUB = 'https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/2'
+BERT_LAYER = hub.KerasLayer(BERT_MODEL_HUB, trainable=True, name='bert_layer')
+
+# Maximal length of two evidences in dataset.
+MAX_SEQ_LENGTH = 100
+
+METRICS = [BinaryAccuracy(),
+           Precision(),
+           Recall(),
+           TruePositives(),
+           TrueNegatives(),
+           FalsePositives(),
+           FalseNegatives()]
 
 # Vocabulary and lower case flag is loaded dynamic from layer.
 vocab_file = BERT_LAYER.resolved_object.vocab_file.asset_path.numpy()
 do_lower_case = BERT_LAYER.resolved_object.do_lower_case.numpy()
 tokenizer = bert_tokenization.FullTokenizer(vocab_file=vocab_file, do_lower_case=do_lower_case)
+
+
+def evi_bert() -> Model:
+    """
+    Creates model using pretrained bert_model layer form google. Has three inputs
+    (word_ids, masks and segment_ids). For explanation please look into
+    documentation form preprocessing. Print summary after compilation.
+    :return: created model
+    """
+
+    input_word_ids = Input(shape=(MAX_SEQ_LENGTH,), dtype=int32,
+                           name="input_word_ids")
+    input_mask = Input(shape=(MAX_SEQ_LENGTH,), dtype=int32,
+                       name="input_mask")
+    segment_ids = Input(shape=(MAX_SEQ_LENGTH,), dtype=int32,
+                        name="segment_ids")
+    bert_inputs = [input_word_ids, input_mask, segment_ids]
+
+    _, sequence_output = BERT_LAYER(bert_inputs)
+    sequence_output = GlobalAveragePooling1D(name='average_over_time')(sequence_output)
+
+    output = Dense(1, activation='sigmoid')(sequence_output)
+
+    model = Model(inputs=bert_inputs, outputs=output, name='evi_bert')
+    model.compile(loss='binary_crossentropy', optimizer=Adam(learning_rate=1e-5),
+                  metrics=METRICS)
+
+    return model
+
 
 class EviPair():
     """A single pair of two evidence which are ranked by the label."""
@@ -51,7 +106,7 @@ class EviPair():
 
 class ProcessedEviPair():
     """Representation of tokenized and process evidence pair. Contains arrays of corresponding
-  token_ids, which makes an sentence understandable by bert. Input_mask shows which part of
+  token_ids, which makes an sentence understandable by bert_model. Input_mask shows which part of
   token_ids are padded. Segment ids signalize which part of token_ids belong to first and second
   evidence."""
 
@@ -234,3 +289,79 @@ def load_evi_pairs(filepath) -> [EviPair]:
                                                       acceptance_rate=entry[4],
                                                       label=entry[3]), axis=1)
     return evi_pairs.tolist()
+
+
+# For better testing purpose you can pass the path of the folder of test and train csv
+parser = argparse.ArgumentParser()
+parser.add_argument('filepath',
+                    default='data',
+                    nargs='?',
+                    help='Filepath to folder with train.csv and test.csv',
+                    type=str)
+
+parser.add_argument('dataset_filepath',
+                    default='model_{}'.format(datetime.now().strftime("%Y%m%d-%H%M%S")),
+                    nargs='?',
+                    help='Filepath of model safe folder',
+                    type=str)
+
+"""
+Load test and train set. Afterwards received model and start training
+season. Training will generate a file for tensorboard.
+After that evaluation and print of metrics is done. At the end
+model is saved.
+"""
+if __name__ == '__main__':
+
+    args = parser.parse_args()
+
+    data_path = pathlib.Path(args.filepath)
+
+    dataset_filepath = args.dataset_filepath
+
+    train_path = data_path.joinpath('train.csv')
+    test_path = data_path.joinpath('train.csv')
+
+    if train_path.is_file() and test_path.is_file():
+
+        train_x, train_y = x_and_y_from_dataset(train_path)
+        test_x, test_y = x_and_y_from_dataset(test_path)
+
+        # Correct length of tuple
+        assert len(train_x) == len(test_x) == 3
+
+        bert_model = evi_bert()
+        bert_model.summary()
+
+        assert bert_model is not None
+
+        bert_model.fit(x=train_x, y=train_y,
+                       batch_size=16, epochs=10,
+                       callbacks=[EarlyStopping()],
+                       validation_split=0.2, shuffle=True)
+
+        scores = bert_model.evaluate(x=test_x, y=test_y, verbose=1)
+
+        assert len(scores) > 6
+
+        # Print metrics
+
+        print('Binary Accuracy: {}'.format(scores[1]))
+        print('Precision: {}'.format(scores[2]))
+        print('Recall: {}'.format(scores[3]))
+
+        # Print values of confusion matrix
+
+        print('True negatives / Labeled with first evidence '
+              'and predicted as first evidence  : {}'.format(scores[5]))
+        print('True positives / Labeled with second evidence '
+              'and predicted as second evidence : {}'.format(scores[4]))
+        print('False negatives / Labeled with first evidence '
+              'and predicted as second evidence : {}'.format(scores[7]))
+        print('False positives / Labeled with second evidence '
+              'and predicted as first evidence : {}'.format(scores[6]))
+
+        bert_model.save(dataset_filepath)
+
+    else:
+        print('Datasets at  {} and {} not found!'.format(train_path, test_path))
