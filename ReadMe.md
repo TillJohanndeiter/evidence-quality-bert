@@ -1,4 +1,4 @@
-# Argument Quality task: IBM Debater – Evidence Quality
+# BERT based evidence quality classificator
 
 Pretrained transformer bert is used to solve the task of binary evidence comparsion based on a IBM dataset. The neuronal network classify the better evidence. The preprocessing, model and training process is implemented in a regular python skript and a jupyter notebook. Also a competive game agianst the neuronal network is includeded.
 
