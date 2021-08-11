@@ -82,4 +82,4 @@ game.py ./data_path/test.csv ./save_path --num=100
 
 ## Contact
 
-If you have any feedback or an issue, please contact me at till.johanndeiter@web.de
+If you have any feedback or an issue, please contact me at till.johanndeiter (at) web.de
